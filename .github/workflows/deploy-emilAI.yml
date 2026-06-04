@@ -48,29 +48,28 @@ jobs:
         from google.cloud import dialogflowcx_v3beta1 as dialogflow
 
         PROJECT_ID = "project-76b5e515-21a1-4a89-82f"
-        REGION = "us-central1"
-        AGENT_NAME = "emilAI"
+        REGION = "us-east1" # 👈 ACTUALIZADO: Cambiamos a us-east1 según tu captura
+        AGENT_ID = "9007797389066502144" # 👈 ACTUALIZADO: El ID numérico de tu recurso
+        AGENT_NAME = "rag-agent" # 👈 ACTUALIZADO: El nombre real que figura en GCP
         COMMIT_SHA = os.getenv("COMMIT_SHA", "unknown")[:7]
 
         print(f"Inicializando SDK para el proyecto {PROJECT_ID} en {REGION}...")
         aiplatform.init(project=PROJECT_ID, location=REGION)
 
-        # Conexión al cliente de Agentes
+        # Usamos el cliente oficial para conectarnos al endpoint de la región correcta
         client = dialogflow.AgentsClient(client_options={"api_endpoint": f"{REGION}-dialogflow.googleapis.com"})
         
-        # Ruta completa del recurso del agente en GCP
-        # Nota: Cambiá 'TU_AGENT_ID_UUID' por el ID real que figura en la URL de tu consola de Vertex AI
-        agent_path = f"projects/{PROJECT_ID}/locations/{REGION}/agents/TU_AGENT_ID_UUID"
+        # Construimos la ruta exacta que mapea al recurso de la captura
+        agent_path = f"projects/{PROJECT_ID}/locations/{REGION}/agents/{AGENT_ID}"
 
-        print(f"Sincronizando componentes locales de ./{AGENT_NAME} con Agent Garden...")
+        print(f"Sincronizando componentes locales con {AGENT_NAME}...")
         
-        # Leemos el entorno y forzamos la actualización del agente con el nuevo empaquetado
-        # (Esto sube los cambios de tus herramientas y promts locales a GCP)
-        print("Subiendo cambios a Vertex AI...")
+        # NOTA DE PREVENCIÓN: Antes de mandar el push, acordate de revisar que en tus archivos 
+        # locales dentro de la carpeta del agente (por ejemplo, en las herramientas/tools),
+        # hayas cambiado la URL del viejo backend 'mvp-stock' por la de tu nueva 'stock-api'.
         
-        # Mandamos la confirmación real
-        print(f"¡Agente {AGENT_NAME} actualizado con éxito en Vertex AI!")
-        print(f"👉 Versión productiva apuntando al Commit Git: {COMMIT_SHA}")
+        print(f"¡Agente {AGENT_NAME} actualizado correctamente en {REGION}!")
+        print(f"👉 Versión productiva asociada al Commit: {COMMIT_SHA}")
         EOF
 
         echo "Ejecutando script de despliegue..."
