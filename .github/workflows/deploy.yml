@@ -2,8 +2,9 @@ name: Deploy to Cloud Run
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
+    paths:
+      - 'backend/**'      
 
 env:
   PROJECT_ID: project-76b5e515-21a1-4a89-82f

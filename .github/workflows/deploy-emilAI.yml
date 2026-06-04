@@ -1,0 +1,43 @@
+name: Deploy emilAI Agent to Vertex AI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'emilAI/**' # 👈 CLAVE: Solo se ejecuta si tocás código del agente
+
+env:
+  PROJECT_ID: project-76b5e515-21a1-4a89-82f
+  REGION: us-central1 # Ajustala a la región de tu agente si no es us-central1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # Autenticación con Google Cloud usando la cuenta de servicio que ya configuraste
+    - name: Google Auth
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+    - name: Set up Cloud SDK
+      uses: 'google-github-actions/setup-gcloud@v2'
+
+    # Despliegue del agente usando el SDK de Vertex AI / Agent Garden
+    - name: Deploy Agent to Vertex AI
+      run: |
+        echo "Instalando dependencias de Vertex AI..."
+        pip install google-cloud-aiplatform
+
+        echo "Actualizando definición de emilAI en Agent Garden..."
+        # Nota: La CLI de gcloud permite actualizar el código de los componentes
+        # de Vertex AI cargando el directorio de configuración del ADK (.adk).
+        gcloud ai agents versions create \
+          --agent="emilAI" \
+          --project="${{ env.PROJECT_ID }}" \
+          --location="${{ env.REGION }}" \
+          --local-dir="./emilAI" \
+          --set-default
