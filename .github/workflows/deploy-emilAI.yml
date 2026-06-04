@@ -34,19 +34,21 @@ jobs:
 
     - name: Deploy Agent to Vertex AI
       run: |
-        # 1. Instalar dependencias necesarias para el Makefile (si es que usa pip/requirements)
+        # 1. Instalar pip, vertexai y el gestor 'uv' que pide el Makefile
         python -m pip install --upgrade pip
-        if [ -f emilAI/requirements.txt ]; then pip install -r emilAI/requirements.txt; fi
         pip install --upgrade google-cloud-aiplatform vertexai
+        
+        echo "Instalando 'uv' (Python package manager)..."
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        # Agregamos uv al PATH de la sesión de ejecución actual
+        . $HOME/.local/bin/env
 
-        # 2. Moverse a la carpeta donde está el Makefile y ejecutar el despliegue
-        # Reemplazá 'emilAI' por la ruta exacta donde esté tu Makefile si no está en la raíz
+        # 2. Moverse a la carpeta del agente y ejecutar
         cd emilAI
         
         echo "Ejecutando el despliegue nativo de Agent Garden..."
         make backend
       env:
         PROJECT_ID: ${{ env.PROJECT_ID }}
-        REGION: ${{ env.REGION }}
-        # Si el Makefile necesita variables de entorno específicas (como el ID del corpus), pasalas acá:
-        # DATASTORE_ID: "tu-datastore-id"
+        REGION: us-central1
+        RAG_CORPUS_ID: "6464794119788036096"
