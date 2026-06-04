@@ -1,0 +1,4 @@
+env:
+  PROJECT_ID: project-76b5e515-21a1-4a89-82f
+  REGION: us-central1 # o la que prefieras usar
+  SERVICE_NAME: stock-api # el nombre que quieras para tu app en Cloud Run
