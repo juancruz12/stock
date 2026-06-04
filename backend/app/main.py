@@ -4,9 +4,9 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app import crud
-from app.database import Base, engine, get_db
-from app.schemas import StockCreate, StockOut, StockUpdate
+from . import crud
+from .database import Base, engine, get_db
+from .schemas import StockCreate, StockOut, StockUpdate
 
 
 @asynccontextmanager
@@ -54,9 +54,10 @@ def get_stock(stock_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="stock no encontrado")
     return item
 
+
 @app.get("/stockByName/{stock_name}", response_model=list[StockOut], tags=["stock"])
 def list_stock_by_name(stock_name: str, db: Session = Depends(get_db)):
-    return crud.get_stock_by_name(db, stock_name)    
+    return crud.get_stock_by_name(db, stock_name)
 
 
 @app.post("/stock", response_model=StockOut, status_code=status.HTTP_201_CREATED, tags=["stock"])

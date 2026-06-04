@@ -5,15 +5,16 @@ API básica de stock con **FastAPI** + **PostgreSQL**, lista para desplegar en *
 ## Estructura
 
 ```
-app/
-  config.py     # Configuración por variables de entorno
-  database.py   # Engine y sesión de SQLAlchemy
-  models.py     # Tabla `stock` (descripcion, cantidad, precio)
-  schemas.py    # Modelos Pydantic (validación)
-  crud.py       # Operaciones de base de datos
-  main.py       # App FastAPI y endpoints
-Dockerfile
-requirements.txt
+backend/
+  app/
+    config.py     # Configuración por variables de entorno
+    database.py   # Engine y sesión de SQLAlchemy
+    models.py     # Tabla `stock` (descripcion, cantidad, precio)
+    schemas.py    # Modelos Pydantic (validación)
+    crud.py       # Operaciones de base de datos
+    main.py       # App FastAPI y endpoints
+  Dockerfile
+  requirements.txt
 ```
 
 ## Tabla `stock`
@@ -44,6 +45,7 @@ Docs interactivas en `/docs`.
 ## Desarrollo local
 
 ```bash
+cd backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env   # ajustá las credenciales
@@ -64,7 +66,7 @@ REGION=us-central1
 INSTANCE=mi-proyecto:us-central1:mi-instancia
 
 # 1. Build & push de la imagen (Artifact Registry)
-gcloud builds submit --tag $REGION-docker.pkg.dev/$PROJECT_ID/apps/stock-api
+gcloud builds submit --tag $REGION-docker.pkg.dev/$PROJECT_ID/apps/stock-api ./backend
 
 # 2. Deploy a Cloud Run con conexión a Cloud SQL
 gcloud run deploy stock-api \

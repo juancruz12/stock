@@ -1,13 +1,14 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Stock
-from app.schemas import StockCreate, StockUpdate
+from .models import Stock
+from .schemas import StockCreate, StockUpdate
 
 
 def list_stock(db: Session, skip: int = 0, limit: int = 100) -> list[Stock]:
     stmt = select(Stock).offset(skip).limit(limit).order_by(Stock.id)
     return list(db.scalars(stmt).all())
+
 
 def get_stock_by_name(db: Session, stock_name: str) -> Stock | None:
     stmt = select(Stock).where(Stock.descripcion.ilike(f"%{stock_name}%"))
