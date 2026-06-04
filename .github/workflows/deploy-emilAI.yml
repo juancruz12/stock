@@ -33,45 +33,20 @@ jobs:
       uses: google-github-actions/setup-gcloud@v2
 
     - name: Deploy Agent to Vertex AI
-      env:
-        COMMIT_SHA: ${{ github.sha }}
       run: |
-        echo "Instalando dependencias de Vertex AI..."
-        pip install --upgrade google-cloud-aiplatform
+        # 1. Instalar dependencias necesarias para el Makefile (si es que usa pip/requirements)
+        python -m pip install --upgrade pip
+        if [ -f emilAI/requirements.txt ]; then pip install -r emilAI/requirements.txt; fi
+        pip install --upgrade google-cloud-aiplatform vertexai
 
-        echo "Generando script de despliegue para el Agente RAG..."
-        cat << 'EOF' > deploy_agent.py
-        import os
-        from google.cloud import aiplatform_v1 as aiplatform
-
-        PROJECT_ID = "project-76b5e515-21a1-4a89-82f"
-        REGION = "us-east1"
-        RESOURCE_NAME = "projects/114519320182/locations/us-east1/reasoningEngines/9007797389066502144"
-        COMMIT_SHA = os.getenv("COMMIT_SHA", "unknown")[:7]
-
-        print(f"Inicializando cliente de Vertex AI para Reasoning Engines...")
-        # 🎯 Usamos el cliente de la API v1 que maneja de verdad el ciclo de vida de los agentes RAG
-        client = aiplatform.ReasoningEngineServiceClient(
-            client_options={"api_endpoint": f"{REGION}-aiplatform.googleapis.com"}
-        )
-
-        print(f"Buscando Agente RAG en Agent Garden: {RESOURCE_NAME}...")
+        # 2. Moverse a la carpeta donde está el Makefile y ejecutar el despliegue
+        # Reemplazá 'emilAI' por la ruta exacta donde esté tu Makefile si no está en la raíz
+        cd emilAI
         
-        # Obtenemos la configuración actual del agente en la nube para validar que existe
-        current_agent = client.get_reasoning_engine(name=RESOURCE_NAME)
-        print(f"Agente encontrado: {current_agent.display_name}")
-
-        print(f"Actualizando componentes desde ./emilAI (inyectando nueva URL de la stock-api)...")
-        # En la API de Google, para actualizar la configuración de un agente existente,
-        # le mandamos el parche con el recurso mutado.
-        # Nota: Como el ADK local empaqueta tus archivos, la API v1 procesa el nuevo layout.
-        
-        # patch_request = aiplatform.UpdateReasoningEngineRequest(reasoning_engine=current_agent)
-        # client.update_reasoning_engine(request=patch_request)
-
-        print(f"¡Agente RAG de Agent Garden ({current_agent.display_name}) actualizado con éxito!")
-        print(f"👉 Despliegue listo en el Commit: {COMMIT_SHA}")
-        EOF
-
-        echo "Ejecutando script de despliegue..."
-        python deploy_agent.py
+        echo "Ejecutando el despliegue nativo de Agent Garden..."
+        make backend
+      env:
+        PROJECT_ID: ${{ env.PROJECT_ID }}
+        REGION: ${{ env.REGION }}
+        # Si el Makefile necesita variables de entorno específicas (como el ID del corpus), pasalas acá:
+        # DATASTORE_ID: "tu-datastore-id"
