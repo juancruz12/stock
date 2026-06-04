@@ -39,9 +39,8 @@ jobs:
         pip install google-cloud-aiplatform
 
         echo "Actualizando definición de emilAI en Agent Garden..."
-        # Nota: La CLI de gcloud permite actualizar el código de los componentes
-        # de Vertex AI cargando el directorio de configuración del ADK (.adk).
-        gcloud ai agents versions create \
+        # 🚀 Usamos 'gcloud beta' para habilitar el comando 'ai agents'
+        gcloud beta ai agents versions create \
           --agent="emilAI" \
           --project="${{ env.PROJECT_ID }}" \
           --location="${{ env.REGION }}" \
