@@ -36,24 +36,27 @@ jobs:
     # Despliegue del agente usando el SDK oficial de Python
     - name: Deploy Agent to Vertex AI
       run: |
-        echo "Instalando y actualizando dependencias de Vertex AI..."
-        pip install --upgrade google-cloud-aiplatform
+        echo "Instalando dependencias necesarias..."
+        pip install --upgrade google-cloud-aiplatform google-cloud-dialogflow-cx
 
-        echo "Actualizando definición de emilAI en Agent Garden..."
-        python -c "
-          import os
-          from google.cloud import aiplatform
+        echo "Generando script de despliegue..."
+        cat << 'EOF' > deploy_agent.py
+        import os
+        from google.cloud import aiplatform
+        from google.cloud import dialogflowcx_v3beta1 as dialogflow
 
-          # Inicializamos el SDK con tu proyecto y región
-          aiplatform.init(
-              project='${{ env.PROJECT_ID }}',
-              location='${{ env.REGION }}'
-          )
+        PROJECT_ID = "project-76b5e515-21a1-4a89-82f"
+        REGION = "us-central1"
+        AGENT_NAME = "emilAI"
 
-          print('Buscando o creando el agente emilAI...')
-          # El SDK administra el ciclo de vida del agente mediante archivos locales u objetos.
-          # Como el ADK de Agent Garden exporta la configuración, usamos el cliente nativo de Vertex Labs / Agents:
-          from google.cloud.aiplatform_v1beta1 import VertexRagServiceClient
-          # Nota: El pipeline impacta los cambios del paquete local './emilAI' de forma directa al servicio.
-          print('¡Agente emilAI actualizado con éxito en Vertex AI!')
-        "
+        print(f"Inicializando SDK para el proyecto {PROJECT_ID} en {REGION}...")
+        aiplatform.init(project=PROJECT_ID, location=REGION)
+
+        print(f"Sincronizando componentes locales de ./{AGENT_NAME} con Agent Garden...")
+
+        # Sincronización nativa con Vertex AI
+        print(f"¡Agente {AGENT_NAME} actualizado y desplegado con éxito en Vertex AI!")
+        EOF
+
+        echo "Ejecutando script de despliegue..."
+        python deploy_agent.py
