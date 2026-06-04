@@ -4,72 +4,66 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'emilAI/**' # 👈 CLAVE: Solo se ejecuta si tocás código del agente
+      - 'emilAI/**' # 👈 Se dispara automáticamente cuando commiteás cambios en la carpeta del agente
 
 env:
   PROJECT_ID: project-76b5e515-21a1-4a89-82f
-  REGION: us-central1 # Ajustala a la región de tu agente si no es us-central1
+  REGION: us-east1 # 👈 Apunta a la región real de tu rag-agent
+  AGENT_ID: "9007797389066502144" # 👈 El ID real de tu recurso en producción
+projects/114519320182/locations/us-east1/reasoningEngines/9007797389066502144
+
+permissions:
+  contents: 'read'
+  id-token: 'write'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # Autenticación con Google Cloud usando Workload Identity Federation (WIF)
     - name: Google Auth
-      uses: 'google-github-actions/auth@v2'
+      id: auth
+      uses: google-github-actions/auth@v2
       with:
-        workload_identity_provider: '${{ secrets.GCP_WIF_PROVIDER }}' # 👈 Tus secretos de WIF
+        workload_identity_provider: '${{ secrets.GCP_WIF_PROVIDER }}'
         service_account: '${{ secrets.GCP_SA_EMAIL }}'
 
     - name: Set up Cloud SDK
-      uses: 'google-github-actions/setup-gcloud@v2'
+      uses: google-github-actions/setup-gcloud@v2
 
-    # Despliegue del agente usando el SDK de Vertex AI / Agent Garden
-    # Despliegue del agente usando el SDK oficial de Python
     - name: Deploy Agent to Vertex AI
       env:
         COMMIT_SHA: ${{ github.sha }}
       run: |
-        echo "Instalando dependencias necesarias..."
-        pip install --upgrade google-cloud-aiplatform google-cloud-dialogflow-cx
+        echo "Instalando dependencias de Vertex AI..."
+        pip install --upgrade google-cloud-aiplatform
 
-        echo "Generando script de despliegue..."
+        echo "Generando script de despliegue para el Agente RAG..."
         cat << 'EOF' > deploy_agent.py
         import os
         from google.cloud import aiplatform
-        from google.cloud import dialogflowcx_v3beta1 as dialogflow
 
         PROJECT_ID = "project-76b5e515-21a1-4a89-82f"
-        REGION = "us-east1" # 👈 ACTUALIZADO: Cambiamos a us-east1 según tu captura
-        AGENT_ID = "9007797389066502144" # 👈 ACTUALIZADO: El ID numérico de tu recurso
-        AGENT_NAME = "rag-agent" # 👈 ACTUALIZADO: El nombre real que figura en GCP
+        REGION = "us-east1"
+        # La ruta completa que copiaste de la consola
+        RESOURCE_NAME = "projects/114519320182/locations/us-east1/reasoningEngines/9007797389066502144"
         COMMIT_SHA = os.getenv("COMMIT_SHA", "unknown")[:7]
 
-        print(f"Inicializando SDK para el proyecto {PROJECT_ID} en {REGION}...")
+        print(f"Inicializando Vertex AI en {REGION}...")
         aiplatform.init(project=PROJECT_ID, location=REGION)
 
-        # Usamos el cliente oficial para conectarnos al endpoint de la región correcta
-        client = dialogflow.AgentsClient(client_options={"api_endpoint": f"{REGION}-dialogflow.googleapis.com"})
+        print(f"Buscando Agente RAG en Agent Garden...")
+        agent = aiplatform.ReasoningEngine(resource_name=RESOURCE_NAME)
         
-        # Construimos la ruta exacta que mapea al recurso de la captura
-        agent_path = f"projects/{PROJECT_ID}/locations/{REGION}/agents/{AGENT_ID}"
-
-        print(f"Sincronizando componentes locales con {AGENT_NAME}...")
+        print(f"Actualizando componentes desde ./emilAI (asociando nueva URL de stock-api)...")
+        # El SDK lee los archivos locales del agente y actualiza el recurso productivo
+        # Pasamos la ruta del directorio local donde está la configuración nueva
+        agent.update(local_dir="./emilAI")
         
-        # NOTA DE PREVENCIÓN: Antes de mandar el push, acordate de revisar que en tus archivos 
-        # locales dentro de la carpeta del agente (por ejemplo, en las herramientas/tools),
-        # hayas cambiado la URL del viejo backend 'mvp-stock' por la de tu nueva 'stock-api'.
-        
-        print(f"¡Agente {AGENT_NAME} actualizado correctamente en {REGION}!")
-        print(f"👉 Versión productiva asociada al Commit: {COMMIT_SHA}")
+        print(f"¡Agente RAG de Agent Garden actualizado con éxito!")
+        print(f"👉 Despliegue listo en el Commit: {COMMIT_SHA}")
         EOF
 
         echo "Ejecutando script de despliegue..."
