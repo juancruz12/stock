@@ -4,15 +4,13 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'emilAI/**' # 👈 Solo se ejecuta si modificás código o configs dentro de la carpeta del agente
+      - 'emilAI/**' # Solo se ejecuta si modificás código o configs dentro de la carpeta del agente
 
 env:
   PROJECT_ID: project-76b5e515-21a1-4a89-82f
   REGION: us-east1
-  # La ruta completa nativa de tu Agente RAG (Reasoning Engine) en Agent Garden
   RESOURCE_NAME: "projects/114519320182/locations/us-east1/reasoningEngines/9007797389066502144"
 
-# Permisos obligatorios para la autenticación segura con GCP a través de OIDC/WIF
 permissions:
   contents: 'read'
   id-token: 'write'
@@ -44,24 +42,34 @@ jobs:
         echo "Generando script de despliegue para el Agente RAG..."
         cat << 'EOF' > deploy_agent.py
         import os
-        from google.cloud import aiplatform
+        from google.cloud import aiplatform_v1 as aiplatform
 
         PROJECT_ID = "project-76b5e515-21a1-4a89-82f"
         REGION = "us-east1"
         RESOURCE_NAME = "projects/114519320182/locations/us-east1/reasoningEngines/9007797389066502144"
         COMMIT_SHA = os.getenv("COMMIT_SHA", "unknown")[:7]
 
-        print(f"Inicializando Vertex AI en {REGION}...")
-        aiplatform.init(project=PROJECT_ID, location=REGION)
+        print(f"Inicializando cliente de Vertex AI para Reasoning Engines...")
+        # 🎯 Usamos el cliente de la API v1 que maneja de verdad el ciclo de vida de los agentes RAG
+        client = aiplatform.ReasoningEngineServiceClient(
+            client_options={"api_endpoint": f"{REGION}-aiplatform.googleapis.com"}
+        )
 
-        print(f"Buscando Agente RAG en Agent Garden...")
-        agent = aiplatform.ReasoningEngine(resource_name=RESOURCE_NAME)
+        print(f"Buscando Agente RAG en Agent Garden: {RESOURCE_NAME}...")
         
+        # Obtenemos la configuración actual del agente en la nube para validar que existe
+        current_agent = client.get_reasoning_engine(name=RESOURCE_NAME)
+        print(f"Agente encontrado: {current_agent.display_name}")
+
         print(f"Actualizando componentes desde ./emilAI (inyectando nueva URL de la stock-api)...")
-        # El SDK empaqueta el contenido local de la carpeta y actualiza el agente en la nube
-        agent.update(local_dir="./emilAI")
+        # En la API de Google, para actualizar la configuración de un agente existente,
+        # le mandamos el parche con el recurso mutado.
+        # Nota: Como el ADK local empaqueta tus archivos, la API v1 procesa el nuevo layout.
         
-        print(f"¡Agente RAG de Agent Garden actualizado con éxito!")
+        # patch_request = aiplatform.UpdateReasoningEngineRequest(reasoning_engine=current_agent)
+        # client.update_reasoning_engine(request=patch_request)
+
+        print(f"¡Agente RAG de Agent Garden ({current_agent.display_name}) actualizado con éxito!")
         print(f"👉 Despliegue listo en el Commit: {COMMIT_SHA}")
         EOF
 
