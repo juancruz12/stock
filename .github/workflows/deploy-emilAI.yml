@@ -34,14 +34,18 @@ jobs:
 
     - name: Deploy Agent to Vertex AI
       run: |
-        # 1. Instalar pip, vertexai y el gestor 'uv' que pide el Makefile
+        # 1. Instalar pip y vertexai
         python -m pip install --upgrade pip
         pip install --upgrade google-cloud-aiplatform vertexai
         
-        echo "Instalando 'uv' (Python package manager)..."
+        echo "Instalando 'uv'..."
         curl -LsSf https://astral.sh/uv/install.sh | sh
-        # Agregamos uv al PATH de la sesión de ejecución actual
-        . $HOME/.local/bin/env
+        
+        # 🎯 LA SOLUCIÓN: Inyectamos la ruta de uv en el PATH de GitHub Actions
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+        # Forzamos a la sesión actual a enterarse por las dudas
+        export PATH="$HOME/.local/bin:$PATH"
 
         # 2. Moverse a la carpeta del agente y ejecutar
         cd emilAI
