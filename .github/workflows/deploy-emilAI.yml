@@ -35,14 +35,17 @@ jobs:
     # Despliegue del agente usando el SDK de Vertex AI / Agent Garden
     - name: Deploy Agent to Vertex AI
       run: |
-        echo "Instalando dependencias de Vertex AI..."
+        echo "Instalando dependencias de Vertex AI y componentes beta de gcloud..."
         pip install google-cloud-aiplatform
+        # Aseguramos la instalación del componente beta de forma no interactiva
+        gcloud components install beta --quiet
 
         echo "Actualizando definición de emilAI en Agent Garden..."
-        # 🚀 Usamos 'gcloud beta' para habilitar el comando 'ai agents'
+        # Le clavamos el --quiet al final para que no pida confirmación de nada
         gcloud beta ai agents versions create \
           --agent="emilAI" \
           --project="${{ env.PROJECT_ID }}" \
           --location="${{ env.REGION }}" \
           --local-dir="./emilAI" \
-          --set-default
+          --set-default \
+          --quiet
