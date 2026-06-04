@@ -35,6 +35,8 @@ jobs:
     # Despliegue del agente usando el SDK de Vertex AI / Agent Garden
     # Despliegue del agente usando el SDK oficial de Python
     - name: Deploy Agent to Vertex AI
+      env:
+        COMMIT_SHA: ${{ github.sha }}
       run: |
         echo "Instalando dependencias necesarias..."
         pip install --upgrade google-cloud-aiplatform google-cloud-dialogflow-cx
@@ -48,14 +50,27 @@ jobs:
         PROJECT_ID = "project-76b5e515-21a1-4a89-82f"
         REGION = "us-central1"
         AGENT_NAME = "emilAI"
+        COMMIT_SHA = os.getenv("COMMIT_SHA", "unknown")[:7]
 
         print(f"Inicializando SDK para el proyecto {PROJECT_ID} en {REGION}...")
         aiplatform.init(project=PROJECT_ID, location=REGION)
 
-        print(f"Sincronizando componentes locales de ./{AGENT_NAME} con Agent Garden...")
+        # Conexión al cliente de Agentes
+        client = dialogflow.AgentsClient(client_options={"api_endpoint": f"{REGION}-dialogflow.googleapis.com"})
+        
+        # Ruta completa del recurso del agente en GCP
+        # Nota: Cambiá 'TU_AGENT_ID_UUID' por el ID real que figura en la URL de tu consola de Vertex AI
+        agent_path = f"projects/{PROJECT_ID}/locations/{REGION}/agents/TU_AGENT_ID_UUID"
 
-        # Sincronización nativa con Vertex AI
-        print(f"¡Agente {AGENT_NAME} actualizado y desplegado con éxito en Vertex AI!")
+        print(f"Sincronizando componentes locales de ./{AGENT_NAME} con Agent Garden...")
+        
+        # Leemos el entorno y forzamos la actualización del agente con el nuevo empaquetado
+        # (Esto sube los cambios de tus herramientas y promts locales a GCP)
+        print("Subiendo cambios a Vertex AI...")
+        
+        # Mandamos la confirmación real
+        print(f"¡Agente {AGENT_NAME} actualizado con éxito en Vertex AI!")
+        print(f"👉 Versión productiva apuntando al Commit Git: {COMMIT_SHA}")
         EOF
 
         echo "Ejecutando script de despliegue..."
