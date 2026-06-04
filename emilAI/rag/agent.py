@@ -90,7 +90,7 @@ def get_stock_availability(product_name: str) -> dict:
     Args:
         product_name: El nombre o descripcion del producto a buscar.
     """
-    api_url = os.environ.get("STOCK_API_URL", "https://mvp-stock-114519320182.us-central1.run.app").rstrip("/")
+    api_url = os.environ.get("STOCK_API_URL", "https://stock-api-114519320182.us-central1.run.app").rstrip("/")
     
     try:
         encoded_name = urllib.parse.quote(product_name)
