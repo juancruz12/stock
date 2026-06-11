@@ -131,10 +131,6 @@ resource "google_vertex_ai_reasoning_engine" "agente_rag" {
         value = "us-east1"
       }
       env {
-        name  = "GOOGLE_CLOUD_PROJECT"
-        value = var.project_id
-      }
-      env {
         name  = "NUM_WORKERS"
         value = "1"
       }
