@@ -6,12 +6,22 @@ variable "project_id" {
 variable "environment" {
   type        = string
   description = "preprod"
+
+  validation {
+    condition     = contains(["dev", "preprod", "prod"], var.environment)
+    error_message = "environment must be dev, preprod, or prod."
+  }
 }
 
 variable "db_password" {
   type        = string
   sensitive   = true
   description = "emilAiDatabase"
+}
+
+variable "rag_corpus" {
+  type        = string
+  description = "projects/<project-number>/locations/us-east1/ragCorpora/<corpus-id>"
 }
 
 variable "image_tag" {

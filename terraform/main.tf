@@ -5,7 +5,7 @@ resource "google_sql_database_instance" "db" {
   database_version = "POSTGRES_16"
 
   settings {
-    tier = "db-f1-micro"
+    tier    = "db-f1-micro"
     edition = "ENTERPRISE"
 
     location_preference {
@@ -18,7 +18,7 @@ resource "google_sql_database_instance" "db" {
   }
 
   # Para pruebas en pre-prod podrías querer cambiarlo a false, pero lo dejamos true por seguridad
-  deletion_protection = false 
+  deletion_protection = false
 }
 
 data "google_project" "current" {
@@ -56,7 +56,7 @@ resource "google_cloud_run_v2_service" "backend" {
 
     containers {
       image = "us-central1-docker.pkg.dev/${var.project_id}/cloud-run-source-deploy/stock-api:${var.image_tag}"
-      
+
       env {
         name  = "CLOUD_SQL_CONNECTION_NAME"
         value = google_sql_database_instance.db.connection_name
@@ -90,8 +90,16 @@ resource "google_cloud_run_v2_service" "backend" {
   }
 }
 
+resource "google_cloud_run_v2_service_iam_member" "backend_public_invoker" {
+  project  = var.project_id
+  location = google_cloud_run_v2_service.backend.location
+  name     = google_cloud_run_v2_service.backend.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
 resource "google_vertex_ai_reasoning_engine" "agente_rag" {
-  provider     = google.us_east1
+  provider = google.us_east1
   # Nombre dinámico para el agente
   display_name = "rag-agent-${var.environment}"
   region       = "us-east1"
@@ -104,7 +112,7 @@ resource "google_vertex_ai_reasoning_engine" "agente_rag" {
       container_concurrency = 9
       max_instances         = 10
       min_instances         = 1
-      
+
       resource_limits = {
         "cpu"    = "4"
         "memory" = "8Gi"
@@ -119,6 +127,10 @@ resource "google_vertex_ai_reasoning_engine" "agente_rag" {
         value = "us-east1"
       }
       env {
+        name  = "GOOGLE_CLOUD_PROJECT"
+        value = var.project_id
+      }
+      env {
         name  = "NUM_WORKERS"
         value = "1"
       }
@@ -126,12 +138,20 @@ resource "google_vertex_ai_reasoning_engine" "agente_rag" {
         name  = "OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT"
         value = "true"
       }
+      env {
+        name  = "RAG_CORPUS"
+        value = var.rag_corpus
+      }
+      env {
+        name  = "STOCK_API_URL"
+        value = google_cloud_run_v2_service.backend.uri
+      }
     }
 
     source_code_spec {
       inline_source {
-      source_archive = filebase64("${path.module}/build/source.tar.gz")
-    }
+        source_archive = filebase64("${path.module}/build/source.tar.gz")
+      }
       python_spec {
         entrypoint_module = "rag.agent_engine_app"
         entrypoint_object = "agent_engine"
@@ -140,7 +160,7 @@ resource "google_vertex_ai_reasoning_engine" "agente_rag" {
       }
     }
   }
-  
+
   lifecycle {
     ignore_changes = [
       spec[0].class_methods
