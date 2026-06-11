@@ -88,6 +88,10 @@ resource "google_cloud_run_v2_service" "backend" {
       }
     }
   }
+  depends_on = [
+    google_project_iam_member.cloudrun_sql_client,
+    google_sql_user.postgres_user
+  ]
 }
 
 resource "google_cloud_run_v2_service_iam_member" "backend_public_invoker" {
