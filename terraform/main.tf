@@ -21,6 +21,22 @@ resource "google_sql_database_instance" "db" {
   deletion_protection = false 
 }
 
+data "google_project" "current" {
+  project_id = var.project_id
+}
+
+resource "google_project_iam_member" "cloudrun_sql_client" {
+  project = var.project_id
+  role    = "roles/cloudsql.client"
+  member  = "serviceAccount:${data.google_project.current.number}-compute@developer.gserviceaccount.com"
+}
+
+resource "google_sql_user" "postgres_user" {
+  name     = "postgres"
+  instance = google_sql_database_instance.db.name
+  password = var.db_password # Usa exactamente la misma variable que le pasás al contenedor
+}
+
 resource "google_sql_database" "database" {
   name     = "emil_ai_db"
   instance = google_sql_database_instance.db.name
