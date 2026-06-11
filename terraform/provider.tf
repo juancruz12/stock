@@ -6,11 +6,8 @@ terraform {
       version = ">= 7.0" # O la versión estable actual
     }
   }
-  # Bloque de backend para guardar el estado en el bucket que creaste
-  backend "gcs" {
-    bucket = "emil-ai-tfstate"
-    prefix = "terraform/state"
-  }
+  # El bucket y el prefijo se inyectan por ambiente desde GitHub Actions.
+  backend "gcs" {}
 }
 
 provider "google" {
