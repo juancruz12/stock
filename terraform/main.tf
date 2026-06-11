@@ -1,13 +1,15 @@
-resource "google_sql_database_instance" "db_prod" {
-  name             = "emil-ia-postgres-mvp"
+resource "google_sql_database_instance" "db" {
+  # El nombre ahora es dinámico: emil-ia-postgres-preprod o emil-ia-postgres-prod
+  name             = "emil-ai-postgres-${var.environment}"
   region           = "us-central1"
-  database_version = "POSTGRES_16" # <--- Cambiado de 15 a 16
+  database_version = "POSTGRES_16"
 
   settings {
-    tier = "db-f1-micro" # Confirmá en la consola si usás db-f1-micro u otro tier (ej. db-custom-1-3840)
+    tier = "db-f1-micro"
+    edition = "ENTERPRISE"
 
     location_preference {
-      zone = "us-central1-a" # <--- Esto evita que intente destruirla
+      zone = "us-central1-a"
     }
 
     ip_configuration {
@@ -15,33 +17,33 @@ resource "google_sql_database_instance" "db_prod" {
     }
   }
 
-  deletion_protection = true # <--- Clave para que nunca te la borre por error
+  # Para pruebas en pre-prod podrías querer cambiarlo a false, pero lo dejamos true por seguridad
+  deletion_protection = false 
 }
 
 resource "google_sql_database" "database" {
-  name     = "postgres"
-  instance = google_sql_database_instance.db_prod.name
+  name     = "emil_ai_db"
+  instance = google_sql_database_instance.db.name
 }
 
-resource "google_cloud_run_v2_service" "backend_prod" {
-  name     = "stock-api"
-  location = "us-central1"
+resource "google_cloud_run_v2_service" "backend" {
+  name                = "stock-api-${var.environment}"
+  location            = "us-central1"
+  deletion_protection = false
 
   template {
-    # Mantenemos las etiquetas reales del deploy
+    # 1. Limpiamos las labels quitando el bloque intruso
     labels = {
-      "commit-sha" = "958d4f16309b05e98ccb2e6502cf0899f94c1502"
+      "commit-sha" = var.image_tag
       "managed-by" = "github-actions"
     }
 
     containers {
-      # Imagen exacta que recuperó el plan
-      image = "us-central1-docker.pkg.dev/project-76b5e515-21a1-4a89-82f/cloud-run-source-deploy/stock-api:958d4f16309b05e98ccb2e6502cf0899f94c1502"
+      image = "us-central1-docker.pkg.dev/${var.project_id}/cloud-run-source-deploy/stock-api:${var.image_tag}"
       
-      # Inyección de las variables de entorno para la DB
       env {
         name  = "CLOUD_SQL_CONNECTION_NAME"
-        value = "project-76b5e515-21a1-4a89-82f:us-central1:emil-ia-postgres-mvp"
+        value = google_sql_database_instance.db.connection_name
       }
       env {
         name  = "DB_USER"
@@ -49,42 +51,39 @@ resource "google_cloud_run_v2_service" "backend_prod" {
       }
       env {
         name  = "DB_PASSWORD"
-        value = "root" 
+        value = var.db_password
       }
       env {
         name  = "DB_NAME"
-        value = "postgres"
+        value = google_sql_database.database.name
       }
 
-      # Montado del socket de conexión de Cloud SQL
       volume_mounts {
         name       = "cloudsql"
         mount_path = "/cloudsql"
       }
     }
 
-    # Declaración del volumen del proxy de Cloud SQL
+    # 3. El volumen queda apuntando dinámicamente al connection_name nativo
     volumes {
       name = "cloudsql"
       cloud_sql_instance {
-        instances = ["project-76b5e515-21a1-4a89-82f:us-central1:emil-ia-postgres-mvp"]
+        instances = [google_sql_database_instance.db.connection_name]
       }
     }
   }
 }
 
-
 resource "google_vertex_ai_reasoning_engine" "agente_rag" {
   provider     = google.us_east1
-  display_name = "rag-agent"
+  # Nombre dinámico para el agente
+  display_name = "rag-agent-${var.environment}"
   region       = "us-east1"
-  description  = "RAG Document Assistant"
+  description  = "RAG Document Assistant - ${var.environment}"
 
   spec {
-    # El framework que recuperó el plan
     agent_framework = "google-adk"
 
-    # Mantenemos las especificaciones de despliegue y límites de hardware
     deployment_spec {
       container_concurrency = 9
       max_instances         = 10
@@ -113,20 +112,19 @@ resource "google_vertex_ai_reasoning_engine" "agente_rag" {
       }
     }
 
-    # Esta es la especificación del código Python real de tu Agent Garden
     source_code_spec {
+      inline_source {
+      source_archive = filebase64("${path.module}/build/source.tar.gz")
+    }
       python_spec {
         entrypoint_module = "rag.agent_engine_app"
         entrypoint_object = "agent_engine"
-        requirements_file = "rag/app_utils/.requirements.txt"
+        requirements_file = "requirements.txt"
         version           = "3.12"
       }
     }
   }
   
-  # TRUCO DE MAGIA: Como la API de Google genera los class_methods de forma dinámica 
-  # basándose en los métodos de tu clase Python (get_session, list_sessions, etc.),
-  # le decimos a Terraform que ignore los cambios en esa propiedad para que no se vuelva loco intentando trackear el JSON.
   lifecycle {
     ignore_changes = [
       spec[0].class_methods

@@ -1,44 +1,46 @@
 from functools import lru_cache
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     """Configuración de la aplicación leída desde variables de entorno."""
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    # 🎯 ALERTA CLAVE: Agregamos case_sensitive=False para que a Pydantic no le importe
+    # si desde Terraform le mandás en mayúsculas o minúsculas.
+    model_config = SettingsConfigDict(
+        env_file=".env", 
+        extra="ignore",
+        case_sensitive=False  # <--- AGREGÁ ESTO
+    )
 
-    # Conexión directa por URL (tiene prioridad si está definida).
-    # Ej: postgresql+psycopg://user:pass@host:5432/dbname
-    database_url: str | None = None
+    # Conexión directa por URL
+    DATABASE_URL: str | None = None
 
-    # Componentes individuales (usados si no hay database_url).
-    db_user: str = "postgres"
-    db_password: str = "postgres"
-    db_name: str = "postgres"
-    db_host: str = "localhost"
-    db_port: int = 5432
+    # Componentes individuales
+    DB_USER: str = "postgres"
+    DB_PASSWORD: str = "postgres"
+    DB_NAME: str = "postgres"
+    DB_HOST: str = "localhost"
+    DB_PORT: int = 5432
 
-    # Nombre de conexión de la instancia de Cloud SQL.
-    # Ej: project:region:instance
-    # Si está definido, se conecta vía socket Unix en /cloudsql.
-    cloud_sql_connection_name: str | None = None
+    # Pasamos esta también a mayúsculas para mantener el estándar limpio
+    CLOUD_SQL_CONNECTION_NAME: str | None = None
 
     def build_database_url(self) -> str:
-        if self.database_url:
-            return self.database_url
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
 
-        if self.cloud_sql_connection_name:
+        if self.CLOUD_SQL_CONNECTION_NAME:
             # Cloud Run monta el socket de Cloud SQL en /cloudsql/<conn-name>.
-            socket_path = f"/cloudsql/{self.cloud_sql_connection_name}"
+            socket_path = f"/cloudsql/{self.CLOUD_SQL_CONNECTION_NAME}"
             return (
-                f"postgresql+psycopg://{self.db_user}:{self.db_password}"
-                f"@/{self.db_name}?host={socket_path}"
+                f"postgresql+psycopg://{self.DB_USER}:{self.DB_PASSWORD}"
+                f"@/{self.DB_NAME}?host={socket_path}"
             )
 
         return (
-            f"postgresql+psycopg://{self.db_user}:{self.db_password}"
-            f"@{self.db_host}:{self.db_port}/{self.db_name}"
+            f"postgresql+psycopg://{self.DB_USER}:{self.DB_PASSWORD}"
+            f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
         )
 
 

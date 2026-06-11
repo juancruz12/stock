@@ -3,7 +3,7 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = ">= 6.0" # O la versión estable actual
+      version = ">= 7.0" # O la versión estable actual
     }
   }
   # Bloque de backend para guardar el estado en el bucket que creaste
@@ -14,13 +14,13 @@ terraform {
 }
 
 provider "google" {
-  project = "project-76b5e515-21a1-4a89-82f"
+  project = var.project_id
   region  = "us-central1"
 }
 
 # Proveedor secundario exclusivo para recursos en us-east1
 provider "google" {
   alias   = "us_east1" # <--- Este es el nombre clave
-  project = "project-76b5e515-21a1-4a89-82f"
+  project = var.project_id
   region  = "us-east1"
 }
