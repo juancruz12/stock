@@ -1,4 +1,4 @@
-name: Deploy to Cloud Run
+name: Deploy to Cloud Run (Preprod Fix)
 
 on:
   push:
@@ -7,7 +7,8 @@ on:
       - 'backend/**'      
 
 env:
-  PROJECT_ID: project-76b5e515-21a1-4a89-82f
+  # 1. CAMBIAMOS AL NUEVO PROYECTO REAL
+  PROJECT_ID: emil-ai-preprod
   REGION: us-central1
   SERVICE_NAME: stock-api
 
@@ -40,20 +41,9 @@ jobs:
     - name: Build and Push Container
       run: |
         gcloud artifacts repositories create cloud-run-source-deploy \
-          --repository-format=docker --location=${{ env.REGION }} --quiet || true
+          --repository-format=docker --location=${{ env.REGION }} --project=${{ env.PROJECT_ID }} --quiet || true
         
         IMAGE_TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/cloud-run-source-deploy/${{ env.SERVICE_NAME }}:${{ github.sha }}"
         docker build -f backend/Dockerfile -t $IMAGE_TAG backend
         docker push $IMAGE_TAG
         echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
-
-    - name: Deploy to Cloud Run
-      uses: google-github-actions/deploy-cloudrun@v2
-      with:
-        service: ${{ env.SERVICE_NAME }}
-        region: ${{ env.REGION }}
-        image: ${{ env.IMAGE_TAG }}
-        flags: |
-          --allow-unauthenticated
-          --set-cloudsql-instances="project-76b5e515-21a1-4a89-82f:us-central1:emil-ia-postgres-mvp"
-          --set-env-vars="CLOUD_SQL_CONNECTION_NAME=project-76b5e515-21a1-4a89-82f:us-central1:emil-ia-postgres-mvp,DB_USER=postgres,DB_PASSWORD=root,DB_NAME=postgres"
