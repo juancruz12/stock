@@ -83,3 +83,4 @@ Notas:
 - Cloud Run inyecta `PORT` (8080); el contenedor ya lo respeta.
 - Con `--add-cloudsql-instances` se monta el socket en `/cloudsql/<conn>`, y `config.py` arma la URL de conexión vía ese socket.
 - Guardá `DB_PASSWORD` en **Secret Manager** en vez de pasarla en texto plano.
+
