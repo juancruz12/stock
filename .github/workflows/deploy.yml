@@ -72,12 +72,16 @@ jobs:
         mkdir -p terraform/build
         tar -czf terraform/build/source.tar.gz -C emilAI rag requirements.txt pyproject.toml uv.lock
 
+    - name: Set GCP Project
+      run: gcloud config set project "${{ vars.GCP_PROJECT_ID }}"
+
     - name: Terraform Apply
       run: |
         set -euo pipefail
         terraform -chdir=terraform init \
           -backend-config="bucket=emil-ai-tfstate" \
-          -backend-config="prefix=terraform/state/dev"
+          -backend-config="prefix=terraform/state/dev" \
+          -backend-config="project=${{ vars.GCP_PROJECT_ID }}"
 
         terraform -chdir=terraform apply -auto-approve \
           -var-file="dev.tfvars" \
@@ -142,12 +146,16 @@ jobs:
         mkdir -p terraform/build
         tar -czf terraform/build/source.tar.gz -C emilAI rag requirements.txt pyproject.toml uv.lock
 
+    - name: Set GCP Project
+      run: gcloud config set project "${{ vars.GCP_PROJECT_ID }}"
+
     - name: Terraform Apply
       run: |
         set -euo pipefail
         terraform -chdir=terraform init \
           -backend-config="bucket=emil-ai-tfstate" \
-          -backend-config="prefix=terraform/state/preprod"
+          -backend-config="prefix=terraform/state/preprod" \
+          -backend-config="project=${{ vars.GCP_PROJECT_ID }}"
 
         terraform -chdir=terraform apply -auto-approve \
           -var-file="preprod.tfvars" \
@@ -212,12 +220,16 @@ jobs:
         mkdir -p terraform/build
         tar -czf terraform/build/source.tar.gz -C emilAI rag requirements.txt pyproject.toml uv.lock
 
+    - name: Set GCP Project
+      run: gcloud config set project "${{ vars.GCP_PROJECT_ID }}"
+
     - name: Terraform Apply
       run: |
         set -euo pipefail
         terraform -chdir=terraform init \
           -backend-config="bucket=emil-ai-tfstate" \
-          -backend-config="prefix=terraform/state/prod"
+          -backend-config="prefix=terraform/state/prod" \
+          -backend-config="project=${{ vars.GCP_PROJECT_ID }}"
 
         terraform -chdir=terraform apply -auto-approve \
           -var-file="prod.tfvars" \
