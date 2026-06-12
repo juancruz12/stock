@@ -94,18 +94,6 @@ resource "google_cloud_run_v2_service" "backend" {
   ]
 }
 
-# En dev/preprod: restringir a usuarios autorizados
-# En prod: dejar público (si lo deseas cambiar, modifica la condición)
-resource "google_cloud_run_v2_service_iam_member" "backend_invoker_authorized" {
-  for_each = toset(local.backend_invoker_members)
-
-  project  = var.project_id
-  location = google_cloud_run_v2_service.backend.location
-  name     = google_cloud_run_v2_service.backend.name
-  role     = "roles/run.invoker"
-  member   = each.value
-}
-
 locals {
   backend_invoker_members = var.environment == "prod" ? [] : [
     for member in var.authorized_users : (
@@ -114,15 +102,14 @@ locals {
   ]
 }
 
-# En prod: permitir a allUsers (descomenta si quieres cambiar este comportamiento)
-resource "google_cloud_run_v2_service_iam_member" "backend_public_invoker" {
-  count = var.environment == "prod" ? 1 : 0
-
-  project  = var.project_id
+# En dev/preprod: restringir a usuarios autorizados
+# En prod: dejar público con allUsers
+resource "google_cloud_run_v2_service_iam_binding" "backend_invoker" {
+  project = var.project_id
   location = google_cloud_run_v2_service.backend.location
-  name     = google_cloud_run_v2_service.backend.name
-  role     = "roles/run.invoker"
-  member   = "allUsers"
+  name = google_cloud_run_v2_service.backend.name
+  role = "roles/run.invoker"
+  members = var.environment == "prod" ? ["allUsers"] : local.backend_invoker_members
 }
 
 resource "google_vertex_ai_reasoning_engine" "agente_rag" {
