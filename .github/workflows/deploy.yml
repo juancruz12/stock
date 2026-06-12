@@ -81,7 +81,6 @@ jobs:
         terraform -chdir=terraform init \
           -backend-config="bucket=emil-ai-tfstate" \
           -backend-config="prefix=terraform/state/dev" \
-          -backend-config="project=${{ vars.GCP_PROJECT_ID }}"
 
         terraform -chdir=terraform apply -auto-approve \
           -var-file="dev.tfvars" \
@@ -155,7 +154,6 @@ jobs:
         terraform -chdir=terraform init \
           -backend-config="bucket=emil-ai-tfstate" \
           -backend-config="prefix=terraform/state/preprod" \
-          -backend-config="project=${{ vars.GCP_PROJECT_ID }}"
 
         terraform -chdir=terraform apply -auto-approve \
           -var-file="preprod.tfvars" \
@@ -229,7 +227,6 @@ jobs:
         terraform -chdir=terraform init \
           -backend-config="bucket=emil-ai-tfstate" \
           -backend-config="prefix=terraform/state/prod" \
-          -backend-config="project=${{ vars.GCP_PROJECT_ID }}"
 
         terraform -chdir=terraform apply -auto-approve \
           -var-file="prod.tfvars" \
