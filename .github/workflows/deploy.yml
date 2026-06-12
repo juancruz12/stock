@@ -78,11 +78,13 @@ jobs:
     - name: Terraform Apply
       run: |
         set -euo pipefail
+        # El bucket de state vive en preprod; init necesita ese contexto de proyecto.
+        gcloud config set project "${{ vars.GCP_TFSTATE_PROJECT_ID }}"
         terraform -chdir=terraform init \
           -backend-config="bucket=emil-ai-tfstate" \
           -backend-config="prefix=terraform/state/dev" \
-          -backend-config="project=${{ vars.GCP_TFSTATE_PROJECT_ID }}" \
 
+        gcloud config set project "${{ vars.GCP_PROJECT_ID }}"
         terraform -chdir=terraform apply -auto-approve \
           -var-file="dev.tfvars" \
           -var="project_id=${{ vars.GCP_PROJECT_ID }}" \
@@ -152,11 +154,12 @@ jobs:
     - name: Terraform Apply
       run: |
         set -euo pipefail
+        gcloud config set project "${{ vars.GCP_TFSTATE_PROJECT_ID }}"
         terraform -chdir=terraform init \
           -backend-config="bucket=emil-ai-tfstate" \
           -backend-config="prefix=terraform/state/preprod" \
-          -backend-config="project=${{ vars.GCP_TFSTATE_PROJECT_ID }}" \
 
+        gcloud config set project "${{ vars.GCP_PROJECT_ID }}"
         terraform -chdir=terraform apply -auto-approve \
           -var-file="preprod.tfvars" \
           -var="project_id=${{ vars.GCP_PROJECT_ID }}" \
@@ -226,11 +229,12 @@ jobs:
     - name: Terraform Apply
       run: |
         set -euo pipefail
+        gcloud config set project "${{ vars.GCP_TFSTATE_PROJECT_ID }}"
         terraform -chdir=terraform init \
           -backend-config="bucket=emil-ai-tfstate" \
           -backend-config="prefix=terraform/state/prod" \
-          -backend-config="project=${{ vars.GCP_TFSTATE_PROJECT_ID }}" \
 
+        gcloud config set project "${{ vars.GCP_PROJECT_ID }}"
         terraform -chdir=terraform apply -auto-approve \
           -var-file="prod.tfvars" \
           -var="project_id=${{ vars.GCP_PROJECT_ID }}" \
