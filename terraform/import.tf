@@ -7,3 +7,8 @@ import {
   id = "projects/${var.project_id}/instances/emil-ai-postgres-${var.environment}/databases/emil_ai_db"
   to = google_sql_database.database
 }
+
+import {
+  id = "projects/${var.project_id}/locations/us-central1/services/stock-api-${var.environment}"
+  to = google_cloud_run_v2_service.backend
+}
