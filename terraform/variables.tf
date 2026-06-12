@@ -28,3 +28,9 @@ variable "image_tag" {
   type        = string
   description = "958d4f16309b05e98ccb2e6502cf0899f94c1502"
 }
+
+variable "authorized_users" {
+  type        = list(string)
+  description = "List of email addresses or groups authorized to invoke Cloud Run service in dev/preprod environments"
+  default     = []
+}

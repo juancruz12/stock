@@ -94,7 +94,24 @@ resource "google_cloud_run_v2_service" "backend" {
   ]
 }
 
+# En dev/preprod: restringir a usuarios autorizados
+# En prod: dejar público (si lo deseas cambiar, modifica la condición)
+resource "google_cloud_run_v2_service_iam_member" "backend_invoker_authorized" {
+  for_each = toset(
+    var.environment == "prod" ? [] : var.authorized_users
+  )
+
+  project  = var.project_id
+  location = google_cloud_run_v2_service.backend.location
+  name     = google_cloud_run_v2_service.backend.name
+  role     = "roles/run.invoker"
+  member   = each.value
+}
+
+# En prod: permitir a allUsers (descomenta si quieres cambiar este comportamiento)
 resource "google_cloud_run_v2_service_iam_member" "backend_public_invoker" {
+  count = var.environment == "prod" ? 1 : 0
+
   project  = var.project_id
   location = google_cloud_run_v2_service.backend.location
   name     = google_cloud_run_v2_service.backend.name
@@ -145,6 +162,10 @@ resource "google_vertex_ai_reasoning_engine" "agente_rag" {
       env {
         name  = "STOCK_API_URL"
         value = google_cloud_run_v2_service.backend.uri
+      }
+      env {
+        name  = "ENVIRONMENT"
+        value = var.environment
       }
     }
 

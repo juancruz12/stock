@@ -18,6 +18,8 @@ import requests
 import urllib.parse
 
 import google.auth
+from google.auth.transport.requests import Request
+from google.oauth2 import service_account
 
 from google.adk.tools import FunctionTool
 from dotenv import load_dotenv
@@ -91,12 +93,36 @@ def get_stock_availability(product_name: str) -> dict:
         product_name: El nombre o descripcion del producto a buscar.
     """
     api_url = os.environ.get("STOCK_API_URL", "https://stock-api-114519320182.us-central1.run.app").rstrip("/")
+    environment = os.environ.get("ENVIRONMENT", "prod").lower()
     
     try:
         encoded_name = urllib.parse.quote(product_name)
         url = f"{api_url}/stockByName/{encoded_name}"
         
-        response = requests.get(url, timeout=10)
+        # Para dev/preprod, obtener token de identidad para autenticarse
+        headers = {}
+        if environment in ["dev", "preprod"]:
+            try:
+                credentials, _ = google.auth.default()
+                
+                # Si es una service account, crear un token de identidad
+                if hasattr(credentials, 'service_account_email'):
+                    credentials.refresh(Request())
+                    # Obtener un token de identidad para Cloud Run
+                    request = Request()
+                    credentials.refresh(request)
+                    # Para Cloud Run, usar el token de acceso (funciona con service-to-service)
+                    headers["Authorization"] = f"Bearer {credentials.token}"
+                else:
+                    # Para credenciales default en GCP (Compute Engine, Cloud Run, etc)
+                    from google.auth.transport.requests import Request
+                    credentials.refresh(Request())
+                    headers["Authorization"] = f"Bearer {credentials.token}"
+            except Exception as auth_error:
+                # Si no hay credenciales configuradas, intentar sin header (fallback)
+                pass
+        
+        response = requests.get(url, timeout=10, headers=headers)
         response.raise_for_status()
         
         data = response.json()
