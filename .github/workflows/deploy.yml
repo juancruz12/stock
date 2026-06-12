@@ -72,19 +72,24 @@ jobs:
         mkdir -p terraform/build
         tar -czf terraform/build/source.tar.gz -C emilAI rag requirements.txt pyproject.toml uv.lock
 
-    - name: Set GCP Project
-      run: gcloud config set project "${{ vars.GCP_PROJECT_ID }}"
-
-    - name: Terraform Apply
+    - name: Terraform Init
+      env:
+        CLOUDSDK_CORE_PROJECT: ${{ vars.GCP_TFSTATE_PROJECT_ID }}
+        GOOGLE_CLOUD_PROJECT: ${{ vars.GCP_TFSTATE_PROJECT_ID }}
+        GOOGLE_PROJECT: ${{ vars.GCP_TFSTATE_PROJECT_ID }}
       run: |
         set -euo pipefail
-        # El bucket de state vive en preprod; init necesita ese contexto de proyecto.
-        gcloud config set project "${{ vars.GCP_TFSTATE_PROJECT_ID }}"
         terraform -chdir=terraform init \
-          -backend-config="bucket=emil-ai-tfstate" \
-          -backend-config="prefix=terraform/state/dev" \
+          -backend-config="bucket=${{ vars.GCP_TFSTATE_BUCKET }}" \
+          -backend-config="prefix=terraform/state/dev"
 
-        gcloud config set project "${{ vars.GCP_PROJECT_ID }}"
+    - name: Terraform Apply
+      env:
+        CLOUDSDK_CORE_PROJECT: ${{ vars.GCP_PROJECT_ID }}
+        GOOGLE_CLOUD_PROJECT: ${{ vars.GCP_PROJECT_ID }}
+        GOOGLE_PROJECT: ${{ vars.GCP_PROJECT_ID }}
+      run: |
+        set -euo pipefail
         terraform -chdir=terraform apply -auto-approve \
           -var-file="dev.tfvars" \
           -var="project_id=${{ vars.GCP_PROJECT_ID }}" \
@@ -148,18 +153,24 @@ jobs:
         mkdir -p terraform/build
         tar -czf terraform/build/source.tar.gz -C emilAI rag requirements.txt pyproject.toml uv.lock
 
-    - name: Set GCP Project
-      run: gcloud config set project "${{ vars.GCP_PROJECT_ID }}"
-
-    - name: Terraform Apply
+    - name: Terraform Init
+      env:
+        CLOUDSDK_CORE_PROJECT: ${{ vars.GCP_TFSTATE_PROJECT_ID }}
+        GOOGLE_CLOUD_PROJECT: ${{ vars.GCP_TFSTATE_PROJECT_ID }}
+        GOOGLE_PROJECT: ${{ vars.GCP_TFSTATE_PROJECT_ID }}
       run: |
         set -euo pipefail
-        gcloud config set project "${{ vars.GCP_TFSTATE_PROJECT_ID }}"
         terraform -chdir=terraform init \
-          -backend-config="bucket=emil-ai-tfstate" \
-          -backend-config="prefix=terraform/state/preprod" \
+          -backend-config="bucket=${{ vars.GCP_TFSTATE_BUCKET }}" \
+          -backend-config="prefix=terraform/state/preprod"
 
-        gcloud config set project "${{ vars.GCP_PROJECT_ID }}"
+    - name: Terraform Apply
+      env:
+        CLOUDSDK_CORE_PROJECT: ${{ vars.GCP_PROJECT_ID }}
+        GOOGLE_CLOUD_PROJECT: ${{ vars.GCP_PROJECT_ID }}
+        GOOGLE_PROJECT: ${{ vars.GCP_PROJECT_ID }}
+      run: |
+        set -euo pipefail
         terraform -chdir=terraform apply -auto-approve \
           -var-file="preprod.tfvars" \
           -var="project_id=${{ vars.GCP_PROJECT_ID }}" \
@@ -223,18 +234,24 @@ jobs:
         mkdir -p terraform/build
         tar -czf terraform/build/source.tar.gz -C emilAI rag requirements.txt pyproject.toml uv.lock
 
-    - name: Set GCP Project
-      run: gcloud config set project "${{ vars.GCP_PROJECT_ID }}"
-
-    - name: Terraform Apply
+    - name: Terraform Init
+      env:
+        CLOUDSDK_CORE_PROJECT: ${{ vars.GCP_TFSTATE_PROJECT_ID }}
+        GOOGLE_CLOUD_PROJECT: ${{ vars.GCP_TFSTATE_PROJECT_ID }}
+        GOOGLE_PROJECT: ${{ vars.GCP_TFSTATE_PROJECT_ID }}
       run: |
         set -euo pipefail
-        gcloud config set project "${{ vars.GCP_TFSTATE_PROJECT_ID }}"
         terraform -chdir=terraform init \
-          -backend-config="bucket=emil-ai-tfstate" \
-          -backend-config="prefix=terraform/state/prod" \
+          -backend-config="bucket=${{ vars.GCP_TFSTATE_BUCKET }}" \
+          -backend-config="prefix=terraform/state/prod"
 
-        gcloud config set project "${{ vars.GCP_PROJECT_ID }}"
+    - name: Terraform Apply
+      env:
+        CLOUDSDK_CORE_PROJECT: ${{ vars.GCP_PROJECT_ID }}
+        GOOGLE_CLOUD_PROJECT: ${{ vars.GCP_PROJECT_ID }}
+        GOOGLE_PROJECT: ${{ vars.GCP_PROJECT_ID }}
+      run: |
+        set -euo pipefail
         terraform -chdir=terraform apply -auto-approve \
           -var-file="prod.tfvars" \
           -var="project_id=${{ vars.GCP_PROJECT_ID }}" \
